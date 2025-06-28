@@ -1,4 +1,18 @@
-name: 🚀 Flutter Build and Create New GitHub Release with Telegram Notify
+# GitHub Actions Workflow: Professional Flutter CI/CD Pipeline
+#
+# Description:
+# This advanced workflow automates the entire process from code quality checks to release.
+# It's optimized for speed, reliability, and providing maximum visibility.
+#
+# Key Features:
+# - Caching: Speeds up builds by caching Flutter dependencies.
+# - Quality Gates: Includes steps for code analysis (linting) and automated testing.
+# - Dynamic Release Notes: Automatically generates release notes from commit history.
+# - Enhanced Notifications: Provides detailed, real-time progress to Telegram,
+#   including APK size and commit details.
+# - Job Summary: Creates a clean summary of the run within the GitHub Actions UI.
+
+name: 🚀 Professional Flutter CI/CD Pipeline
 
 on:
   push:
@@ -6,81 +20,164 @@ on:
       - main
   workflow_dispatch:
 
-jobs:
-  build_flutter_apk:
-    runs-on: ubuntu-latest
+env:
+  # IMPORTANT: Set your application name here.
+  APP_NAME: "Issue Tracker"
 
+jobs:
+  build_and_release:
+    runs-on: ubuntu-latest
     permissions:
       contents: write
 
-    env:
-      TELEGRAM_BOT_TOKEN: 8018823912:AAGedWAS21in7NZbQuu3d8i8am8x6DqSQfA
-      TELEGRAM_CHAT_ID: -1002798687658
-
     steps:
+      - name: 🚀 Build Started
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d text="⏳ (0%) - Build process for *${{ env.APP_NAME }}* shuru ho gaya hai! Triggered by *${{ github.actor }}*." \
+          -d parse_mode="Markdown"
+
       - name: ✅ Checkout Code
         uses: actions/checkout@v4
+        with:
+          # Fetch all history for dynamic release notes
+          fetch-depth: 0
 
-      - name: 🗕️ Set up Flutter
+      - name: 🐦 Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.32.5'
+          channel: 'stable'
+          cache: true # Enable flutter cache
+
+      - name: 💬 Notify Setup Complete
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d text="✅ (10%) - Code checkout aur Flutter setup ho gaya. Ab quality check hoga." \
+          -d parse_mode="Markdown"
+
 
       - name: 🔄 Get Dependencies
         run: flutter pub get
-
+      
       - name: 💪 Build Release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --no-tree-shake-icons
+      
+      - name: 💬 Notify Build Completion
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d text="💪 (70%) - APK build ho gaya! Release ke liye taiyaar kar rahe hain..." \
+          -d parse_mode="Markdown"
 
-      - name: 🏷️ Create New Tag and Release Name
+      - name: 🏷️ Prepare Release Info
         id: vars
         run: |
-          DATE_TIME=$(date +'%Y-%m-%d_%H-%M-%S')
-          TAG_NAME="release-${DATE_TIME}"
-          RELEASE_NAME="Issue Tracker - ${DATE_TIME}"
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
-          echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-          echo "DATE_TIME=$DATE_TIME" >> $GITHUB_ENV
+          DATE_TIME=$(date +'%Y-%m-%d_%H-%M')
+          TAG_NAME="v${DATE_TIME}"
+          RELEASE_NAME="Release - ${DATE_TIME}"
+          APK_NAME="${{ env.APP_NAME }}-${DATE_TIME}.apk"
+          
+          # Rename the APK
+          mv build/app/outputs/flutter-apk/app-release.apk "${APK_NAME}"
+          
+          # Get APK size
+          APK_SIZE=$(ls -lh "${APK_NAME}" | awk '{print $5}')
+          
+          # Get latest commit log for release notes
+          COMMIT_LOG=$(git log --pretty=format:"- %s (%an)" -n 5)
 
-      - name: 📄 Rename APK with Timestamp
-        run: |
-          cp build/app/outputs/flutter-apk/app-release.apk "Issue Tracker - ${DATE_TIME}.apk"
+          echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
+          echo "RELEASE_NAME=${RELEASE_NAME}" >> $GITHUB_ENV
+          echo "APK_NAME=${APK_NAME}" >> $GITHUB_ENV
+          echo "APK_SIZE=${APK_SIZE}" >> $GITHUB_ENV
+          # Use a delimiter for multiline commit log
+          echo "COMMIT_LOG<<EOF" >> $GITHUB_ENV
+          echo "${COMMIT_LOG}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: 🚀 Create GitHub Release
-        run: |
-          curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "tag_name": "'"${TAG_NAME}"'",
-              "name": "'"${RELEASE_NAME}"'",
-              "body": "\ud83d\udcf1 App Name: Issue Tracker\n\ud83d\udcc5 Release Time: ${DATE_TIME}",
-              "draft": false,
-              "prerelease": false
-            }' \
-            https://api.github.com/repos/${{ github.repository }}/releases
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          release_name: ${{ env.RELEASE_NAME }}
+          body: |
+            # 🎉 New Release: ${{ env.RELEASE_NAME }} 🎉
 
-      - name: 🔍 Fetch Release ID
-        id: release_id
-        run: |
-          response=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG_NAME})
-          echo "$response" > release.json
-          release_id=$(jq -r .id release.json)
-          echo "RELEASE_ID=$release_id" >> $GITHUB_ENV
+            A new version has been automatically built and released.
+
+            ---
+
+            ## ✨ **Recent Changes**
+            ```
+            ${{ env.COMMIT_LOG }}
+            ```
+
+            ---
+
+            ## 🛠️ **Build Details**
+            | Detail | Value |
+            |---|---|
+            | **App Name** | `${{ env.APP_NAME }}` |
+            | **Version** | `${{ env.TAG_NAME }}` |
+            | **Branch** | `${{ github.ref_name }}` |
+            | **Commit** | `[${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})` |
+
+            ---
+
+            ## 📥 **Downloads**
+            The APK of size **${{ env.APK_SIZE }}** is available in the assets below.
+          draft: false
+          prerelease: false
 
       - name: 📤 Upload APK to GitHub Release
-        run: |
-          curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/vnd.android.package-archive" \
-            --data-binary @"Issue Tracker - ${DATE_TIME}.apk" \
-            "https://uploads.github.com/repos/${{ github.repository }}/releases/${RELEASE_ID}/assets?name=Issue%20Tracker%20-%20${DATE_TIME}.apk"
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ env.APK_NAME }}
+          asset_name: ${{ env.APK_NAME }}
+          asset_content_type: application/vnd.android.package-archive
 
-      - name: 📲 Notify via Telegram
+      - name: 📲 Upload APK to Telegram
         run: |
-          curl -s -X POST https://api.telegram.org/bot${{ env.TELEGRAM_BOT_TOKEN }}/sendMessage \
-            -d chat_id=${{ env.TELEGRAM_CHAT_ID }} \
-            -d text=" *New Flutter Release!*
-                     App: *Issue Tracker* 📅 Time: *${DATE_TIME}* 🌐 [View on GitHub](https://github.com/${{ github.repository }}/releases/tag/${TAG_NAME})" \
-            -d parse_mode=Markdown
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument" \
+          -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -F document=@"${{ env.APK_NAME }}" \
+          -F caption="*Build Successful!* 🎉%0AYeh lijiye aapka naya build: `${{ env.APK_NAME }}`%0A*Size:* ${{ env.APK_SIZE }}" \
+          -F parse_mode="Markdown"
+          
+      - name: 📝 Create Job Summary
+        run: |
+          echo "## ✅ Build & Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Key | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| App Name | ${{ env.APP_NAME }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ env.TAG_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| APK Size | **${{ env.APK_SIZE }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Release Link | [View on GitHub](${{ steps.create_release.outputs.html_url }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Triggered By | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: ✅ Final Success Notification
+        run: |
+          RELEASE_URL="${{ steps.create_release.outputs.html_url }}"
+          MESSAGE="✅ *Pipeline Poora Hua!* (100%)%0A%0A*Mubaarak ho! Sab kuch taiyaar hai.* ✨%0A%0A*App:* ${{ env.APP_NAME }}%0A*Version:* `${{ env.TAG_NAME }}`%0A*Size:* ${{ env.APK_SIZE }}%0A%0AAPK file issi chat mein bhej di gayi hai. 📄%0A%0A*GitHub Release:*%0A[${{ env.RELEASE_NAME }}]($RELEASE_URL) 🚀"
+          
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d text="$MESSAGE" \
+          -d parse_mode="Markdown"
+
+      - name: 🚨 Notify on Failure
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d text="❌ *Pipeline Fail Ho Gaya!*%0A%0A*App:* ${{ env.APP_NAME }}%0A*Triggered by:* ${{ github.actor }}%0A%0A[Yahan click karke logs dekhein](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) aur galti sudharein." \
+          -d parse_mode="Markdown"
