@@ -159,8 +159,9 @@ class _IssueTrackerScreenState extends State<IssueTrackerScreen>
         }
       }
 
+      final String actualTlName = _tlName == "Other" ? (prefs.getString("otherTlName") ?? "") : _tlName;
       String entry =
-          "CRM ID: $_crmId, TL Name: $_tlName, Advisor Name: $_advisorName, "
+          "CRM ID: $_crmId, Advisor Name: $_advisorName, "
           "Organization: $_organization, Issue Explanation: $_selectedIssueExplanation, "
           "Reason: $_selectedReason, Start Time: ${DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, startTime!.hour, startTime.minute).toIso8601String()}, "
           "End Time: ${DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, endTime!.hour, endTime.minute).toIso8601String()}, Fill Time: ${DateTime.now().toIso8601String()}";

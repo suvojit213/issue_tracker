@@ -988,7 +988,7 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
     String message = "*Issue Report*\n\n"
         "*Advisor Name:* ${parsedEntry['Advisor Name']}\n"
         "*CRM ID:* ${parsedEntry['CRM ID']}\n"
-        "*Team Leader:* ${parsedEntry['Team Leader']}\n"
+        
         "*Organization:* ${parsedEntry['Organization']}\n\n"
         "*Issue:* ${parsedEntry['Issue Explanation']}\n"
         "*Reason:* ${parsedEntry['Reason']}\n\n"
