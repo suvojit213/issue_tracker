@@ -197,7 +197,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
 
   static final List<Widget> _widgetOptions = <Widget>[
     const DashboardScreen(),
-    const IssueTrackerScreen(),
     const HistoryScreen(),
     const SettingsScreen(), // Settings screen is now part of bottom nav
   ];
@@ -221,10 +220,6 @@ class _MainAppScreenState extends State<MainAppScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.add_task_rounded),
-            label: 'Tracker',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.history_rounded),
             label: 'History',
           ),
@@ -241,6 +236,11 @@ class _MainAppScreenState extends State<MainAppScreen> {
         backgroundColor: Colors.white,
         elevation: 10,
       ),
+    );
+  }
+}
+
+      // Removed FloatingActionButton as its functionality is covered by the BottomNavigationBar
     );
   }
 }
@@ -514,7 +514,20 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           ),
         ),
       ),
-      // Removed FloatingActionButton as its functionality is covered by the BottomNavigationBar
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const IssueTrackerScreen()));
+        },
+        label: const Text('Fill Issue'),
+        icon: const Icon(Icons.add_task_rounded),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        elevation: 8,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -583,3 +596,4 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     );
   }
 }
+
