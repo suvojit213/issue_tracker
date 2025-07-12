@@ -5,8 +5,15 @@ import 'package:path_provider/path_provider.dart';
 import 'package:excel/excel.dart'; // Added for Excel generation
 
 class ReportGenerator {
-  static Future<File> generatePdfReport(List<String> issueHistory) async {
+  static Future<File> generatePdfReport(List<String> issueHistory, DateTime? startDate, DateTime? endDate) async {
     final pdf = pw.Document();
+
+    String dateRangeText = '';
+    if (startDate != null && endDate != null) {
+      dateRangeText = ' for ${startDate.day}/${startDate.month}/${startDate.year} - ${endDate.day}/${endDate.month}/${endDate.year}';
+    } else {
+      dateRangeText = ' (All History)';
+    }
 
     pdf.addPage(
       pw.MultiPage(
@@ -15,7 +22,7 @@ class ReportGenerator {
           return [
             pw.Center(
               child: pw.Text(
-                'Daily Issue Report',
+                'Daily Issue Report' + dateRangeText,
                 style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
               ),
             ),
@@ -77,9 +84,20 @@ class ReportGenerator {
     return file;
   }
 
-  static Future<File> generateXlsxReport(List<String> issueHistory) async {
+  static Future<File> generateXlsxReport(List<String> issueHistory, DateTime? startDate, DateTime? endDate) async {
     var excel = Excel.createExcel();
     Sheet sheetObject = excel['Sheet1'];
+
+    String dateRangeText = '';
+    if (startDate != null && endDate != null) {
+      dateRangeText = ' for ${startDate.day}/${startDate.month}/${startDate.year} - ${endDate.day}/${endDate.month}/${endDate.year}';
+    } else {
+      dateRangeText = ' (All History)';
+    }
+
+    // Add title row
+    sheetObject.insertRowIterables(['Daily Issue Report' + dateRangeText], 0);
+    sheetObject.mergeCells(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0), CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: 0));
 
     // Add headers
     List<String> headers = [
@@ -94,7 +112,7 @@ class ReportGenerator {
       'Fill Time',
       'Issue Remarks',
     ];
-    sheetObject.insertRowIterables(headers, 0);
+    sheetObject.insertRowIterables(headers, 1);
 
     // Add data
     for (int i = 0; i < issueHistory.length; i++) {
@@ -111,7 +129,7 @@ class ReportGenerator {
         parts['Fill Time'] ?? '',
         parts['Issue Remarks'] ?? '',
       ];
-      sheetObject.insertRowIterables(rowData, i + 1);
+      sheetObject.insertRowIterables(rowData, i + 2);
     }
 
     final output = await getTemporaryDirectory();

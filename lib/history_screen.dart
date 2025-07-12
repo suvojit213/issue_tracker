@@ -23,6 +23,8 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
   DateTime? _selectedDate;
   TimeOfDay? _selectedStartTime;
   TimeOfDay? _selectedEndTime;
+  DateTime? _selectedStartDate;
+  DateTime? _selectedEndDate;
   late AnimationController _animationController;
   late AnimationController _listController;
   late Animation<double> _fadeAnimation;
@@ -292,19 +294,35 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
           child: Wrap(
             children: <Widget>[
               ListTile(
-                leading: const Icon(Icons.picture_as_pdf),
-                title: const Text('Download as PDF'),
+                leading: const Icon(Icons.download_rounded),
+                title: const Text('Download All History (PDF)'),
                 onTap: () {
                   Navigator.pop(bc);
-                  _downloadReport(context, 'pdf');
+                  _downloadReport(context, 'pdf', null, null);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.grid_on),
-                title: const Text('Download as Excel (XLSX)'),
+                leading: const Icon(Icons.download_rounded),
+                title: const Text('Download All History (XLSX)'),
                 onTap: () {
                   Navigator.pop(bc);
-                  _downloadReport(context, 'xlsx');
+                  _downloadReport(context, 'xlsx', null, null);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_today_rounded),
+                title: const Text('Download by Date Range (PDF)'),
+                onTap: () {
+                  Navigator.pop(bc);
+                  _showDateRangePickerForDownload(context, 'pdf');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_today_rounded),
+                title: const Text('Download by Date Range (XLSX)'),
+                onTap: () {
+                  Navigator.pop(bc);
+                  _showDateRangePickerForDownload(context, 'xlsx');
                 },
               ),
             ],
@@ -314,7 +332,26 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
     );
   }
 
-  Future<void> _downloadReport(BuildContext context, String format) async {
+  Future<void> _showDateRangePickerForDownload(BuildContext context, String format) async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: _selectedStartDate != null && _selectedEndDate != null
+          ? DateTimeRange(start: _selectedStartDate!, end: _selectedEndDate!)
+          : null,
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedStartDate = picked.start;
+        _selectedEndDate = picked.end;
+      });
+      _downloadReport(context, format, _selectedStartDate, _selectedEndDate);
+    }
+  }
+
+  Future<void> _downloadReport(BuildContext context, String format, DateTime? startDate, DateTime? endDate) async {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -332,7 +369,25 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
       SharedPreferences prefs = await SharedPreferences.getInstance();
       List<String> history = prefs.getStringList("issueHistory") ?? [];
 
-      if (history.isEmpty) {
+      List<String> filteredHistory = history.where((entry) {
+        Map<String, String> parsedEntry = parseHistoryEntry(entry);
+        String? fillTime = parsedEntry['Fill Time'];
+        if (fillTime == null) return false;
+
+        try {
+          DateTime entryDate = DateTime.parse(fillTime);
+          if (startDate != null && endDate != null) {
+            return (entryDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+                    entryDate.isBefore(endDate.add(const Duration(days: 1))));
+          } else {
+            return true; // No date filter applied
+          }
+        } catch (e) {
+          return false;
+        }
+      }).toList();
+
+      if (filteredHistory.isEmpty) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -340,7 +395,7 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
               children: [
                 const Icon(Icons.info_outline_rounded, color: Colors.white),
                 const SizedBox(width: 12),
-                const Text('No issues to download.', style: TextStyle(fontFamily: 'Poppins')),
+                const Text('No issues to download for the selected criteria.', style: TextStyle(fontFamily: 'Poppins')),
               ],
             ),
             backgroundColor: Colors.orange,
@@ -354,15 +409,15 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
 
       File? file;
       if (format == 'pdf') {
-        file = await ReportGenerator.generatePdfReport(history);
+        file = await ReportGenerator.generatePdfReport(filteredHistory, startDate, endDate);
       } else if (format == 'xlsx') {
-        file = await ReportGenerator.generateXlsxReport(history);
+        file = await ReportGenerator.generateXlsxReport(filteredHistory, startDate, endDate);
       }
 
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
       if (file != null) {
-        Share.shareXFiles([XFile(file.path)], text: 'Here is your daily issue report.');
+        Share.shareXFiles([XFile(file.path)], text: 'Here is your issue report.');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
