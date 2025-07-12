@@ -5,14 +5,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:excel/excel.dart'; // Added for Excel generation
 
 class ReportGenerator {
-  static Future<File> generatePdfReport(List<String> issueHistory, DateTime? startDate, DateTime? endDate) async {
+  static Future<File> generatePdfReport(List<String> issueHistory, DateTime? date) async {
     final pdf = pw.Document();
 
-    String dateRangeText = '';
-    if (startDate != null && endDate != null) {
-      dateRangeText = ' for ${startDate.day}/${startDate.month}/${startDate.year} - ${endDate.day}/${endDate.month}/${endDate.year}';
+    String dateText = '';
+    if (date != null) {
+      dateText = ' for ${date.day}/${date.month}/${date.year}';
     } else {
-      dateRangeText = ' (All History)';
+      dateText = ' (All History)';
     }
 
     pdf.addPage(
@@ -22,7 +22,7 @@ class ReportGenerator {
           return [
             pw.Center(
               child: pw.Text(
-                'Daily Issue Report' + dateRangeText,
+                'Daily Issue Report' + dateText,
                 style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
               ),
             ),
@@ -84,19 +84,19 @@ class ReportGenerator {
     return file;
   }
 
-  static Future<File> generateXlsxReport(List<String> issueHistory, DateTime? startDate, DateTime? endDate) async {
+  static Future<File> generateXlsxReport(List<String> issueHistory, DateTime? date) async {
     var excel = Excel.createExcel();
     Sheet sheetObject = excel['Sheet1'];
 
-    String dateRangeText = '';
-    if (startDate != null && endDate != null) {
-      dateRangeText = ' for ${startDate.day}/${startDate.month}/${startDate.year} - ${endDate.day}/${endDate.month}/${endDate.year}';
+    String dateText = '';
+    if (date != null) {
+      dateText = ' for ${date.day}/${date.month}/${date.year}';
     } else {
-      dateRangeText = ' (All History)';
+      dateText = ' (All History)';
     }
 
     // Add title row
-    sheetObject.insertRowIterables([TextCellValue('Daily Issue Report' + dateRangeText)], 0);
+    sheetObject.insertRowIterables([TextCellValue('Daily Issue Report' + dateText)], 0);
     // sheetObject.mergeCells(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0), CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: 0));
 
     // Add headers

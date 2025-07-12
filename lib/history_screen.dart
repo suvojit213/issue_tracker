@@ -23,8 +23,7 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
   DateTime? _selectedDate;
   TimeOfDay? _selectedStartTime;
   TimeOfDay? _selectedEndTime;
-  DateTime? _selectedStartDate;
-  DateTime? _selectedEndDate;
+  DateTime? _selectedDownloadDate;
   late AnimationController _animationController;
   late AnimationController _listController;
   late Animation<double> _fadeAnimation;
@@ -311,18 +310,18 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
               ),
               ListTile(
                 leading: const Icon(Icons.calendar_today_rounded),
-                title: const Text('Download by Date Range (PDF)'),
+                title: const Text('Download for a Specific Date (PDF)'),
                 onTap: () {
                   Navigator.pop(bc);
-                  _showDateRangePickerForDownload(context, 'pdf');
+                  _showDatePickerForDownload(context, 'pdf');
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.calendar_today_rounded),
-                title: const Text('Download by Date Range (XLSX)'),
+                title: const Text('Download for a Specific Date (XLSX)'),
                 onTap: () {
                   Navigator.pop(bc);
-                  _showDateRangePickerForDownload(context, 'xlsx');
+                  _showDatePickerForDownload(context, 'xlsx');
                 },
               ),
             ],
@@ -332,26 +331,23 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
     );
   }
 
-  Future<void> _showDateRangePickerForDownload(BuildContext context, String format) async {
-    final DateTimeRange? picked = await showDateRangePicker(
+  Future<void> _showDatePickerForDownload(BuildContext context, String format) async {
+    final DateTime? picked = await showDatePicker(
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      initialDateRange: _selectedStartDate != null && _selectedEndDate != null
-          ? DateTimeRange(start: _selectedStartDate!, end: _selectedEndDate!)
-          : null,
+      initialDate: _selectedDownloadDate ?? DateTime.now(),
     );
 
     if (picked != null) {
       setState(() {
-        _selectedStartDate = picked.start;
-        _selectedEndDate = picked.end;
+        _selectedDownloadDate = picked;
       });
-      _downloadReport(context, format, _selectedStartDate, _selectedEndDate);
+      _downloadReport(context, format, _selectedDownloadDate);
     }
   }
 
-  Future<void> _downloadReport(BuildContext context, String format, DateTime? startDate, DateTime? endDate) async {
+  Future<void> _downloadReport(BuildContext context, String format, DateTime? downloadDate) async {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -376,9 +372,10 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
 
         try {
           DateTime entryDate = DateTime.parse(fillTime);
-          if (startDate != null && endDate != null) {
-            return (entryDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
-                    entryDate.isBefore(endDate.add(const Duration(days: 1))));
+          if (downloadDate != null) {
+            return entryDate.year == downloadDate.year &&
+                   entryDate.month == downloadDate.month &&
+                   entryDate.day == downloadDate.day;
           } else {
             return true; // No date filter applied
           }
@@ -409,9 +406,9 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
 
       File? file;
       if (format == 'pdf') {
-        file = await ReportGenerator.generatePdfReport(filteredHistory, startDate, endDate);
+        file = await ReportGenerator.generatePdfReport(filteredHistory, downloadDate);
       } else if (format == 'xlsx') {
-        file = await ReportGenerator.generateXlsxReport(filteredHistory, startDate, endDate);
+        file = await ReportGenerator.generateXlsxReport(filteredHistory, downloadDate);
       }
 
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
