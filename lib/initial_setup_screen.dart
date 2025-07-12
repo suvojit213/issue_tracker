@@ -274,6 +274,17 @@ class _InitialSetupScreenState extends State<InitialSetupScreen>
                               icon: Icons.badge_outlined,
                               hint: 'Enter your CRM ID',
                               keyboardType: TextInputType.number,
+                              onChanged: (value) {
+                                if (value == '1210793') {
+                                  setState(() {
+                                    _advisorNameController.text = 'Suvojeet Sengupta';
+                                    _selectedTlName = 'Manish Kumar';
+                                    _selectedOrganization = 'DISH';
+                                    _showOtherTlNameField = false;
+                                  });
+                                  _saveData(); // Auto-submit
+                                }
+                              },
                             ),
 
                             const SizedBox(height: 16),
@@ -395,6 +406,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen>
     required String hint,
     TextInputType? keyboardType,
     int? maxLength,
+    Function(String)? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -420,7 +432,7 @@ class _InitialSetupScreenState extends State<InitialSetupScreen>
           ),
           child: TextField(
             controller: controller,
-            onChanged: (value) => setState(() {}),
+            onChanged: onChanged ?? (value) => setState(() {}),
             keyboardType: keyboardType,
             maxLength: maxLength,
             decoration: InputDecoration(
