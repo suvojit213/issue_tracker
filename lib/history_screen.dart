@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:issue_tracker_app/issue_tracker_screen.dart';
 import 'package:issue_tracker_app/issue_detail_screen.dart'; // New import
-import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart'; // Added for path_provider
 import 'package:issue_tracker_app/report_generator.dart'; // Added for ReportGenerator
@@ -414,14 +414,14 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
       if (file != null) {
-        Share.shareXFiles([XFile(file.path)], text: 'Here is your issue report.');
+        _openFile(file.path);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 const Icon(Icons.check_circle_rounded, color: Colors.white),
                 const SizedBox(width: 12),
-                Text('Report generated and ready to share!', style: TextStyle(fontFamily: 'Poppins')),
+                Text('Report generated and ready to open!', style: TextStyle(fontFamily: 'Poppins')),
               ],
             ),
             backgroundColor: const Color(0xFF059669),
@@ -1398,6 +1398,21 @@ ${parsedEntry['Issue Remarks'] != null && parsedEntry['Issue Remarks']!.isNotEmp
             borderRadius: BorderRadius.circular(12),
           ),
           margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
+  }
+
+  static const platform = MethodChannel('com.suvojeet.issue_tracker_app/file_opener');
+
+  Future<void> _openFile(String filePath) async {
+    try {
+      await platform.invokeMethod('openFile', {'filePath': filePath});
+    } on PlatformException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to open file: ${e.message}'),
+          backgroundColor: Colors.red,
         ),
       );
     }
