@@ -62,10 +62,10 @@ class ReportGenerator {
               columnWidths: {
                 0: const pw.FlexColumnWidth(1.2), // CRM ID
                 1: const pw.FlexColumnWidth(1.8), // TL Name
-                2: const pw.FlexColumnWidth(1.5), // Advisor Name
-                3: const pw.FlexColumnWidth(1.2), // Organization
+                2: const pw.FlexColumnWidth(2.0), // Advisor Name (Increased)
+                3: const pw.FlexColumnWidth(1.5), // Organization (Increased)
                 4: const pw.FlexColumnWidth(2.5), // Issue Explanation
-                5: const pw.FlexColumnWidth(1.8), // Reason
+                5: const pw.FlexColumnWidth(2.0), // Reason (Increased)
                 6: const pw.FlexColumnWidth(1.5), // Start Time
                 7: const pw.FlexColumnWidth(1.5), // End Time
                 8: const pw.FlexColumnWidth(1.5), // Fill Time
