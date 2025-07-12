@@ -5,6 +5,8 @@ import 'package:issue_tracker_app/issue_tracker_screen.dart';
 import 'package:issue_tracker_app/issue_detail_screen.dart'; // New import
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart'; // Added for path_provider
+import 'package:issue_tracker_app/report_generator.dart'; // Added for ReportGenerator
 
 import 'package:issue_tracker_app/utils/issue_parser.dart';
 import 'package:issue_tracker_app/history_onboarding_tour.dart'; // New import
@@ -281,6 +283,123 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
     );
   }
 
+  void _showDownloadOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext bc) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf),
+                title: const Text('Download as PDF'),
+                onTap: () {
+                  Navigator.pop(bc);
+                  _downloadReport(context, 'pdf');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.grid_on),
+                title: const Text('Download as Excel (CSV)'),
+                onTap: () {
+                  Navigator.pop(bc);
+                  _downloadReport(context, 'csv');
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _downloadReport(BuildContext context, String format) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 12),
+            Text('Generating $format report...'),
+          ],
+        ),
+        duration: const Duration(days: 1), // Show indefinitely
+      ),
+    );
+
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      List<String> history = prefs.getStringList("issueHistory") ?? [];
+
+      if (history.isEmpty) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded, color: Colors.white),
+                const SizedBox(width: 12),
+                const Text('No issues to download.', style: TextStyle(fontFamily: 'Poppins')),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+        return;
+      }
+
+      File? file;
+      if (format == 'pdf') {
+        file = await ReportGenerator.generatePdfReport(history);
+      } else if (format == 'csv') {
+        file = await ReportGenerator.generateCsvReport(history);
+      }
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (file != null) {
+        Share.shareXFiles([XFile(file.path)], text: 'Here is your daily issue report.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white),
+                const SizedBox(width: 12),
+                Text('Report generated and ready to share!', style: TextStyle(fontFamily: 'Poppins')),
+              ],
+            ),
+            backgroundColor: const Color(0xFF059669),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      } else {
+        throw Exception('File generation failed.');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline_rounded, color: Colors.white),
+              const SizedBox(width: 12),
+              Text('Failed to generate report: $e', style: TextStyle(fontFamily: 'Poppins')),
+            ],
+          ),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -334,8 +453,23 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.white),
-                          onPressed: _clearHistory,
+                          icon: const Icon(Icons.download_rounded, color: Colors.white),
+                          onPressed: () => _showDownloadOptions(context),
+                        ),
+                      ),
+                    if (_issueHistory.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Container(
+                          key: _clearHistoryButtonKey, // Assign key
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+                            onPressed: _clearHistory,
+                          ),
                         ),
                       ),
                   ],

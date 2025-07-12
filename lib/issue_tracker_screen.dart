@@ -7,9 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:issue_tracker_app/google_form_webview_screen.dart';
 import 'package:issue_tracker_app/developer_info_screen.dart';
 
-import 'package:issue_tracker_app/report_generator.dart';
-import 'package:share_plus/share_plus.dart';
-
 class IssueTrackerScreen extends StatefulWidget {
   const IssueTrackerScreen({super.key});
 
@@ -341,18 +338,6 @@ class _IssueTrackerScreenState extends State<IssueTrackerScreen>
                     ),
                     Row(
                       children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.download_rounded,
-                                color: Colors.white),
-                            onPressed: () => _showDownloadOptions(context),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
@@ -1117,120 +1102,4 @@ class _IssueTrackerScreenState extends State<IssueTrackerScreen>
     );
   }
 
-  void _showDownloadOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext bc) {
-        return SafeArea(
-          child: Wrap(
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.picture_as_pdf),
-                title: const Text('Download as PDF'),
-                onTap: () {
-                  Navigator.pop(bc);
-                  _downloadReport(context, 'pdf');
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.grid_on),
-                title: const Text('Download as Excel (CSV)'),
-                onTap: () {
-                  Navigator.pop(bc);
-                  _downloadReport(context, 'csv');
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
-
-  Future<void> _downloadReport(BuildContext context, String format) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(width: 12),
-            Text('Generating $format report...'),
-          ],
-        ),
-        duration: const Duration(days: 1), // Show indefinitely
-      ),
-    );
-
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      List<String> history = prefs.getStringList("issueHistory") ?? [];
-
-      if (history.isEmpty) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.info_outline_rounded, color: Colors.white),
-                const SizedBox(width: 12),
-                const Text('No issues to download.', style: TextStyle(fontFamily: 'Poppins')),
-              ],
-            ),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-        return;
-      }
-
-      File? file;
-      if (format == 'pdf') {
-        file = await ReportGenerator.generatePdfReport(history);
-      } else if (format == 'csv') {
-        file = await ReportGenerator.generateCsvReport(history);
-      }
-
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-      if (file != null) {
-        Share.shareXFiles([XFile(file.path)], text: 'Here is your daily issue report.');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.white),
-                const SizedBox(width: 12),
-                Text('Report generated and ready to share!', style: TextStyle(fontFamily: 'Poppins')),
-              ],
-            ),
-            backgroundColor: const Color(0xFF059669),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-      } else {
-        throw Exception('File generation failed.');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline_rounded, color: Colors.white),
-              const SizedBox(width: 12),
-              Text('Failed to generate report: $e', style: TextStyle(fontFamily: 'Poppins')),
-            ],
-          ),
-          backgroundColor: const Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    }
-  }
-}
