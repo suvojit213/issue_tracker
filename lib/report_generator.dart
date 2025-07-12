@@ -96,8 +96,8 @@ class ReportGenerator {
     }
 
     // Add title row
-    sheetObject.insertRowIterables(['Daily Issue Report' + dateRangeText], 0);
-    sheetObject.mergeCells(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0), CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: 0));
+    sheetObject.insertRowIterables([TextCellValue('Daily Issue Report' + dateRangeText)], 0);
+    // sheetObject.mergeCells(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0), CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: 0));
 
     // Add headers
     List<String> headers = [
@@ -112,7 +112,7 @@ class ReportGenerator {
       'Fill Time',
       'Issue Remarks',
     ];
-    sheetObject.insertRowIterables(headers, 1);
+    sheetObject.insertRowIterables(headers.map((e) => TextCellValue(e)).toList(), 1);
 
     // Add data
     for (int i = 0; i < issueHistory.length; i++) {
@@ -129,7 +129,7 @@ class ReportGenerator {
         parts['Fill Time'] ?? '',
         parts['Issue Remarks'] ?? '',
       ];
-      sheetObject.insertRowIterables(rowData, i + 2);
+      sheetObject.insertRowIterables(rowData.map((e) => TextCellValue(e)).toList(), i + 2);
     }
 
     final output = await getTemporaryDirectory();
