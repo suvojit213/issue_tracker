@@ -60,16 +60,16 @@ class ReportGenerator {
               cellAlignment: pw.Alignment.centerLeft,
               cellPadding: const pw.EdgeInsets.all(4),
               columnWidths: {
-                0: const pw.FlexColumnWidth(1.0), // CRM ID
-                1: const pw.FlexColumnWidth(1.5), // TL Name
+                0: const pw.FlexColumnWidth(1.2), // CRM ID
+                1: const pw.FlexColumnWidth(1.8), // TL Name
                 2: const pw.FlexColumnWidth(1.5), // Advisor Name
-                3: const pw.FlexColumnWidth(1.0), // Organization
-                4: const pw.FlexColumnWidth(2.0), // Issue Explanation
-                5: const pw.FlexColumnWidth(1.5), // Reason
+                3: const pw.FlexColumnWidth(1.2), // Organization
+                4: const pw.FlexColumnWidth(2.5), // Issue Explanation
+                5: const pw.FlexColumnWidth(1.8), // Reason
                 6: const pw.FlexColumnWidth(1.5), // Start Time
                 7: const pw.FlexColumnWidth(1.5), // End Time
                 8: const pw.FlexColumnWidth(1.5), // Fill Time
-                9: const pw.FlexColumnWidth(2.0), // Issue Remarks
+                9: const pw.FlexColumnWidth(2.5), // Issue Remarks
               },
               cellStyle: const pw.TextStyle(fontSize: 8),
             ),
