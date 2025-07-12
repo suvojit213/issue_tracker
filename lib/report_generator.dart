@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
-import 'package:csv/csv.dart';
+import 'package:excel/excel.dart'; // Added for Excel generation
 
 class ReportGenerator {
   static Future<File> generatePdfReport(List<String> issueHistory) async {
@@ -64,9 +64,12 @@ class ReportGenerator {
     return file;
   }
 
-  static Future<File> generateCsvReport(List<String> issueHistory) async {
-    List<List<dynamic>> rows = [];
-    rows.add([
+  static Future<File> generateXlsxReport(List<String> issueHistory) async {
+    var excel = Excel.createExcel();
+    Sheet sheetObject = excel['Sheet1'];
+
+    // Add headers
+    List<String> headers = [
       'CRM ID',
       'TL Name',
       'Advisor Name',
@@ -77,11 +80,13 @@ class ReportGenerator {
       'End Time',
       'Fill Time',
       'Issue Remarks',
-    ]);
+    ];
+    sheetObject.insertRowIterables(headers, 0);
 
-    for (var entry in issueHistory) {
-      final parts = _parseIssueEntry(entry);
-      rows.add([
+    // Add data
+    for (int i = 0; i < issueHistory.length; i++) {
+      final parts = _parseIssueEntry(issueHistory[i]);
+      List<String> rowData = [
         parts['CRM ID'] ?? '',
         parts['TL Name'] ?? '',
         parts['Advisor Name'] ?? '',
@@ -92,14 +97,13 @@ class ReportGenerator {
         parts['End Time'] ?? '',
         parts['Fill Time'] ?? '',
         parts['Issue Remarks'] ?? '',
-      ]);
+      ];
+      sheetObject.insertRowIterables(rowData, i + 1);
     }
 
-    String csv = const ListToCsvConverter().convert(rows);
-
     final output = await getTemporaryDirectory();
-    final file = File("${output.path}/issue_report_${DateTime.now().millisecondsSinceEpoch}.csv");
-    await file.writeAsString(csv);
+    final file = File("${output.path}/issue_report_${DateTime.now().millisecondsSinceEpoch}.xlsx");
+    await file.writeAsBytes(excel.encode()!);
     return file;
   }
 

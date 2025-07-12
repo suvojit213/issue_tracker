@@ -20,7 +20,7 @@ dependencies:
   share_plus: ^7.2.2
   tutorial_coach_mark: ^1.2.10 # For interactive onboarding tour
   pdf: ^3.10.4
-  csv: ^5.1.1
+  excel: ^2.1.0
   
 
 dev_dependencies:

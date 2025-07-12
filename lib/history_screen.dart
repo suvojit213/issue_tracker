@@ -34,6 +34,7 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
   final GlobalKey _startTimeFilterButtonKey = GlobalKey();
   final GlobalKey _endTimeFilterButtonKey = GlobalKey();
   final GlobalKey _clearHistoryButtonKey = GlobalKey();
+  final GlobalKey _downloadButtonKey = GlobalKey();
 
   @override
   void initState() {
@@ -300,10 +301,10 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
               ),
               ListTile(
                 leading: const Icon(Icons.grid_on),
-                title: const Text('Download as Excel (CSV)'),
+                title: const Text('Download as Excel (XLSX)'),
                 onTap: () {
                   Navigator.pop(bc);
-                  _downloadReport(context, 'csv');
+                  _downloadReport(context, 'xlsx');
                 },
               ),
             ],
@@ -354,8 +355,8 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
       File? file;
       if (format == 'pdf') {
         file = await ReportGenerator.generatePdfReport(history);
-      } else if (format == 'csv') {
-        file = await ReportGenerator.generateCsvReport(history);
+      } else if (format == 'xlsx') {
+        file = await ReportGenerator.generateXlsxReport(history);
       }
 
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -445,18 +446,17 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
                         ),
                       ),
                     ),
-                    if (_issueHistory.isNotEmpty)
-                      Container(
-                        key: _clearHistoryButtonKey, // Assign key
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.download_rounded, color: Colors.white),
-                          onPressed: () => _showDownloadOptions(context),
-                        ),
+                    Container(
+                      key: _downloadButtonKey, // Assign key
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: IconButton(
+                        icon: const Icon(Icons.download_rounded, color: Colors.white),
+                        onPressed: () => _showDownloadOptions(context),
+                      ),
+                    ),
                     if (_issueHistory.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(left: 8.0),
