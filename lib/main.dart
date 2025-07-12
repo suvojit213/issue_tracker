@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:issue_tracker_app/initial_setup_screen.dart';
@@ -8,7 +9,7 @@ import 'package:issue_tracker_app/splash_screen.dart'; // New import for splash 
 import 'package:issue_tracker_app/onboarding_tour.dart'; // Import the new onboarding tour
 
 import 'package:issue_tracker_app/edit_profile_screen.dart';
-
+import 'package:issue_tracker_app/notification_history_screen.dart';
 
 import 'package:issue_tracker_app/settings_screen.dart';
 import 'package:issue_tracker_app/developer_info_screen.dart';
@@ -30,6 +31,16 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    _initNotifications();
+  }
+
+  Future<void> _initNotifications() async {
+    const platform = MethodChannel('com.suvojeet.issue_tracker_app/notifications');
+    try {
+      await platform.invokeMethod('scheduleNotification');
+    } on PlatformException catch (e) {
+      print("Failed to schedule notifications: '${e.message}'.");
+    }
   }
 
   @override
@@ -307,6 +318,18 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                                     MaterialPageRoute(
                                         builder: (context) =>
                                             const DeveloperInfoScreen()),
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.notifications_active_outlined,
+                                    color: Colors.white),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            const NotificationHistoryScreen()),
                                   );
                                 },
                               ),

@@ -6,19 +6,38 @@ import android.net.Uri
 import android.os.Environment
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequest
+import androidx.work.WorkManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.suvojeet.issue_tracker_app/file_opener"
+    private val FILE_CHANNEL = "com.suvojeet.issue_tracker_app/file_opener"
+    private val NOTIFICATION_CHANNEL = "com.suvojeet.issue_tracker_app/notifications"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler {
+
+        // Initialize notification channel
+        NotificationHelper.createNotificationChannel(this)
+
+        // Schedule the initial notification worker
+        val initialNotificationWork = OneTimeWorkRequest.Builder(NotificationWorker::class.java)
+            .setInitialDelay(1, TimeUnit.MINUTES) // Start after 1 minute
+            .build()
+        WorkManager.getInstance(this).enqueueUniqueWork(
+            "IssueTrackerInitialNotificationWork",
+            ExistingWorkPolicy.KEEP,
+            initialNotificationWork
+        )
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, FILE_CHANNEL).setMethodCallHandler {
             call, result ->
             if (call.method == "openFile") {
                 val filePath = call.argument<String>("filePath")
@@ -29,6 +48,21 @@ class MainActivity : FlutterActivity() {
                 }
             } else {
                 result.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NOTIFICATION_CHANNEL).setMethodCallHandler {
+            call, result ->
+            when (call.method) {
+                "scheduleNotification" -> {
+                    NotificationWorker.scheduleNextNotification(this)
+                    result.success(null)
+                }
+                "getNotificationHistory" -> {
+                    // Implement this later to retrieve history from SharedPreferences
+                    result.success(emptyList<String>())
+                }
+                else -> result.notImplemented()
             }
         }
     }

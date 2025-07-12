@@ -40,7 +40,9 @@ android {
 }
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
+    implementation(project(":flutter"))
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22")
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 }
 
 flutter {
