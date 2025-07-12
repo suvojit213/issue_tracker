@@ -920,11 +920,6 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.share_rounded, color: Colors.blueAccent),
-                        onPressed: () => _shareIssue(parsedEntry, imagePaths),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      IconButton(
                         icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
                         onPressed: () => _confirmDelete(index),
                         visualDensity: VisualDensity.compact,
@@ -1081,7 +1076,7 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
                                   IconButton(
                                     icon: const Icon(Icons.download_rounded, color: Colors.white),
                                     onPressed: () async {
-                                      await Share.shareXFiles([XFile(imagePaths[imgIndex])]);
+                                      _openFile(imagePaths[imgIndex]);
                                       Navigator.of(context).pop();
                                     },
                                   ),
@@ -1271,27 +1266,7 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
     }
   }
 
-  _shareIssue(Map<String, String> parsedEntry, List<String> imagePaths) {
-    String message = """*Issue Report*
-
-*Advisor Name:* ${parsedEntry['Advisor Name']}
-*CRM ID:* ${parsedEntry['CRM ID']}
-*Organization:* ${parsedEntry['Organization']}
-
-*Issue:* ${parsedEntry['Issue Explanation']}
-*Reason:* ${parsedEntry['Reason']}
-
-*Start Time:* ${_formatTime(parsedEntry['Start Time']!)} on ${_formatOnlyDate(parsedEntry['Start Time']!)}
-*End Time:* ${_formatTime(parsedEntry['End Time']!)} on ${_formatOnlyDate(parsedEntry['End Time']!)}
-*Duration:* ${_formatDuration(parsedEntry['Start Time']!, parsedEntry['End Time']!)}
-*Fill Time:* ${_formatTime(parsedEntry['Fill Time']!)} on ${_formatOnlyDate(parsedEntry['Fill Time']!)}
-${parsedEntry['Issue Remarks'] != null && parsedEntry['Issue Remarks']!.isNotEmpty ? '*Remarks:* ${parsedEntry['Issue Remarks']}' : ''}
-
-"""
-        "This report was generated from the Issue Tracker App.";
-
-    Share.shareXFiles(imagePaths.map((path) => XFile(path)).toList(), text: message);
-  }
+  
 
   _confirmDelete(int index) {
     showDialog(
