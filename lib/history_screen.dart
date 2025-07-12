@@ -297,7 +297,7 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
                 title: const Text('Download All History (PDF)'),
                 onTap: () {
                   Navigator.pop(bc);
-                  _downloadReport(context, 'pdf', null, null);
+                  _downloadReport(context, 'pdf', null);
                 },
               ),
               ListTile(
@@ -305,7 +305,7 @@ class _HistoryScreenState extends State<HistoryScreen> with TickerProviderStateM
                 title: const Text('Download All History (XLSX)'),
                 onTap: () {
                   Navigator.pop(bc);
-                  _downloadReport(context, 'xlsx', null, null);
+                  _downloadReport(context, 'xlsx', null);
                 },
               ),
               ListTile(
